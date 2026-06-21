@@ -125,6 +125,20 @@ export default function App() {
     }
   ];
 
+  if (isGameEnabled) {
+    labs.push({
+      id: 'game',
+      title: 'Kids Shape Academy',
+      icon: '🎮',
+      color: 'science',
+      borderColorClass: 'border-l-8 border-l-pink-500',
+      stackedBorderColorClass: 'border-l-4 border-l-pink-500',
+      badgeBg: 'bg-pink-100 border-pink-300 text-pink-800',
+      desc: 'Play shape matching games, earn high scores, and unlock stars rewards! Gated beta testing.',
+      actionText: 'Play Game 🚀'
+    });
+  }
+
   const renderActiveLab = () => {
     switch (renderedLab) {
       case 'logic':
@@ -139,6 +153,12 @@ export default function App() {
         return <CompanionModule studentId="student_123" onExit={() => setInlineActiveLab(null)} />;
       case 'physical':
         return <PhysicalActivityModule studentId="student_123" onProgressUpdate={handlePhysicalActivityProgressUpdate} onExit={() => setInlineActiveLab(null)} />;
+      case 'game':
+        return (
+          <ErrorBoundary>
+            <KidsGameModule studentId="student_123" onExit={() => setInlineActiveLab(null)} />
+          </ErrorBoundary>
+        );
       default:
         return null;
     }
