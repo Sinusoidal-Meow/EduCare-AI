@@ -408,3 +408,248 @@ Once everything has been verified in the preview environments:
 6. Re-trigger a production build on Vercel. The game link will instantly appear on the dashboard for all users.
 7. **Rollback Contingency**: If anything goes wrong, you can disable the feature instantly by changing `VITE_ENABLE_GAME` back to `false` in the Vercel Dashboard without needing to modify or redeploy any code.
 
+
+---
+
+## 6. Kids Game Timer & High Score Sync Upgrade Protocol
+
+This protocol documents the instructions for updating the **Kids' Shape Academy** game to include a 20-second round timer and syncing high scores to the backend database (or local JSON fallback).
+
+### Step 1: Database Schema Extension
+Extend the `ProgressSchema` in `backend/models/Progress.js` by adding the high score tracking field:
+```javascript
+// File: backend/models/Progress.js
+const ProgressSchema = new mongoose.Schema({
+  ...
+  readinessScore: { type: Number, default: 0 },
+  kidsGameHighScore: { type: Number, default: 0 } // [NEW]
+}, { timestamps: true });
+```
+
+---
+
+### Step 2: Implement Score Retrieval & Update Logic
+Modify `backend/routes/gameRoutes.js` to process requests for score loading and high score synchronization:
+
+```javascript
+// File: backend/routes/gameRoutes.js
+import express from 'express';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
+import { ProgressModel } from '../models/Progress.js';
+
+const router = express.Router();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DB_DIR = path.join(__dirname, '../data');
+const DB_FILE = path.join(DB_DIR, 'db.json');
+
+// Read helper for fallback db.json
+const readLocalDB = () => {
+  try {
+    const data = fs.readFileSync(DB_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    return { studentId: 'default_student', kidsGameHighScore: 0 };
+  }
+};
+
+// Write helper for fallback db.json
+const writeLocalDB = (data) => {
+  try {
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
+    }
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    return true;
+  } catch (err) {
+    return false;
+  }
+};
+
+// GET /api/game/score/:studentId
+router.get('/score/:studentId', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const useMongoDB = global.mongoConnected === true;
+
+    if (useMongoDB) {
+      const progress = await ProgressModel.findOne({ studentId });
+      return res.status(200).json({ highScore: progress ? (progress.kidsGameHighScore || 0) : 0 });
+    } else {
+      const local = readLocalDB();
+      return res.status(200).json({ highScore: local.kidsGameHighScore || 0 });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// POST /api/game/score
+router.post('/score', async (req, res) => {
+  try {
+    const { studentId, score } = req.body;
+    if (!studentId || score === undefined) {
+      return res.status(400).json({ error: "Missing studentId or score" });
+    }
+
+    const useMongoDB = global.mongoConnected === true;
+    let currentHighScore = 0;
+    let updated = false;
+
+    if (useMongoDB) {
+      let progress = await ProgressModel.findOne({ studentId });
+      if (!progress) {
+        progress = await ProgressModel.create({
+          studentId,
+          kidsGameHighScore: score
+        });
+        currentHighScore = score;
+        updated = true;
+      } else {
+        currentHighScore = progress.kidsGameHighScore || 0;
+        if (score > currentHighScore) {
+          progress.kidsGameHighScore = score;
+          await progress.save();
+          currentHighScore = score;
+          updated = true;
+        }
+      }
+    } else {
+      const local = readLocalDB();
+      currentHighScore = local.kidsGameHighScore || 0;
+      if (score > currentHighScore) {
+        local.kidsGameHighScore = score;
+        writeLocalDB(local);
+        currentHighScore = score;
+        updated = true;
+      }
+    }
+
+    return res.status(200).json({ success: true, highScore: currentHighScore, updated });
+  } catch (err) {
+    return res.status(500).json({ error: "Internal Database Error" });
+  }
+});
+
+export default router;
+```
+
+---
+
+### Step 3: Upgrade Kids Game Module Frontend
+Update `frontend/src/components/KidsGame/KidsGameModule.jsx` to manage game state machines (`idle`, `playing`, `ended`), run a 20-second countdown timer, and interact with the database endpoints:
+
+```jsx
+// File: frontend/src/components/KidsGame/KidsGameModule.jsx
+import React, { useState, useEffect } from 'react';
+import { CartoonButton, CartoonCard } from '../Reusables';
+import { API_BASE } from '../../config';
+
+export default function KidsGameModule({ studentId, onExit }) {
+  const [gameState, setGameState] = useState('idle'); // 'idle' | 'playing' | 'ended'
+  const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(20);
+  const [feedback, setFeedback] = useState("Tap the matching shape to earn stars! 🌟");
+
+  const shapes = ['🔺', '🟩', '🟡', '⭐'];
+  const [target, setTarget] = useState('⭐');
+
+  // Fetch High Score on Mount
+  useEffect(() => {
+    const fetchHighScore = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/game/score/${studentId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setHighScore(data.highScore || 0);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch high score:", err);
+      }
+    };
+    fetchHighScore();
+  }, [studentId]);
+
+  // Timer Countdown Effect
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    if (timeLeft <= 0) {
+      endGame();
+      return;
+    }
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [gameState, timeLeft]);
+
+  const startGame = () => {
+    setScore(0);
+    setTimeLeft(20);
+    setFeedback("Tap the matching shape to earn stars! 🌟");
+    const randomIndex = Math.floor(Math.random() * shapes.length);
+    setTarget(shapes[randomIndex]);
+    setGameState('playing');
+  };
+
+  const endGame = async () => {
+    setGameState('ended');
+    const finalScore = score;
+    if (finalScore > highScore) setHighScore(finalScore);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/game/score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, score: finalScore })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.highScore !== undefined) setHighScore(data.highScore);
+      }
+    } catch (err) {
+      console.warn("Backend unavailable, saved locally:", err);
+    }
+  };
+
+  const handleShapeClick = (shape) => {
+    if (gameState !== 'playing') return;
+    if (shape === target) {
+      setScore((prev) => prev + 10);
+      setFeedback("Correct! You earned 10 stars! 🎉");
+      const randomIndex = Math.floor(Math.random() * shapes.length);
+      setTarget(shapes[randomIndex]);
+    } else {
+      setFeedback("Oops! Try again! 🧐");
+    }
+  };
+
+  // Render Start Screen, Playing Workspace, or Game Over screen based on gameState...
+  // (Refer to codebase file for complete styled JSX layout)
+}
+```
+
+---
+
+### Step 4: Verification and Release
+1. Spin up the application locally:
+   ```bash
+   npm run dev:backend
+   npm run dev:frontend
+   ```
+2. Navigate to `http://localhost:3000/?game=beta` and select **Kids Shape Academy**.
+3. Verify that the **Personal Best** score is fetched and displayed.
+4. Click **Start Game** and ensure the countdown timer works correctly.
+5. Finish a round, verify the score updates, and check that the new best is synchronized.
+6. Commit changes and push the branch:
+   ```bash
+   git add .
+   git commit -m "feat: add round timer and persistent high scores for kids shape game"
+   git push origin feature/kids-game
+   ```
+7. Once PR checks pass, merge into `main` for Vercel and Render auto-deployments.
+

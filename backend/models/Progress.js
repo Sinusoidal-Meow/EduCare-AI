@@ -8,7 +8,8 @@ const ProgressSchema = new mongoose.Schema({
   stars: { type: Number, default: 15 },
   level: { type: Number, default: 1 },
   badges: [String],
-  readinessScore: { type: Number, default: 0 }
+  readinessScore: { type: Number, default: 0 },
+  kidsGameHighScore: { type: Number, default: 0 }
 }, { timestamps: true });
 
 export const ProgressModel = mongoose.model('Progress', ProgressSchema);
