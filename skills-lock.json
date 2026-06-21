@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "framer-motion": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "framer-motion/SKILL.md",
+      "computedHash": "4bbfec771a1a13e3462cdd30c442fd09513c50d13a2652a275a8e09ad4532189"
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, GraduationCap, TrendingUp, AlertOctagon, CheckCircle2, Award, Filter, RefreshCw, BarChart3, ListOrdered, Calculator, Percent, Clock, Sparkles, BookOpen, Brain } from 'lucide-react';
+import { Users, GraduationCap, TrendingUp, AlertOctagon, CheckCircle2, Award, Filter, RefreshCw, BarChart3, ListOrdered, Calculator, Percent, Clock, Sparkles, BookOpen, Brain, Star } from 'lucide-react';
 import { API_BASE } from '../config';
 import { CartoonCard, CartoonButton } from './Reusables';
 
@@ -131,6 +131,10 @@ export default function TeacherActivityAnalytics() {
 
   if (!analytics) return null;
 
+  const difficultyDistribution = analytics.difficultyDistribution || analytics.gradeParticipation || [];
+  const skillMasteryProgress = analytics.skillMasteryProgress || analytics.mostCompletedActivities || [];
+  const commonMistakes = analytics.commonMistakes || analytics.mostSkippedActivities || [];
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 py-6">
       
@@ -203,13 +207,13 @@ export default function TeacherActivityAnalytics() {
             <div className="flex justify-between items-center bg-indigo-50 border border-indigo-200 rounded-2xl p-2.5">
               <span className="text-xs font-black text-indigo-700">Assigned Labs:</span>
               <span className="text-lg font-black text-slate-800">
-                {analytics.difficultyDistribution.reduce((sum, g) => sum + g.assigned, 0)}
+                {difficultyDistribution.reduce((sum, g) => sum + g.assigned, 0)}
               </span>
             </div>
             <div className="flex justify-between items-center bg-emerald-50 border border-emerald-200 rounded-2xl p-2.5">
               <span className="text-xs font-black text-emerald-700">Completed Labs:</span>
               <span className="text-lg font-black text-slate-800">
-                {analytics.difficultyDistribution.reduce((sum, g) => sum + g.completed, 0)}
+                {difficultyDistribution.reduce((sum, g) => sum + g.completed, 0)}
               </span>
             </div>
           </div>
@@ -218,12 +222,12 @@ export default function TeacherActivityAnalytics() {
         {/* Most Popular Category */}
         <CartoonCard color="white" className="flex flex-col justify-between p-6">
           <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block mb-2">Top Mastered Skill</span>
-          {analytics.skillMasteryProgress && analytics.skillMasteryProgress.length > 0 ? (
+          {skillMasteryProgress && skillMasteryProgress.length > 0 ? (
             <div className="text-center py-2">
-              <span className="text-5xl select-none block mb-1">{analytics.skillMasteryProgress[0].emoji}</span>
-              <h4 className="font-extrabold text-sm text-slate-800 leading-snug">{analytics.skillMasteryProgress[0].title}</h4>
+              <span className="text-5xl select-none block mb-1">{skillMasteryProgress[0].emoji}</span>
+              <h4 className="font-extrabold text-sm text-slate-800 leading-snug">{skillMasteryProgress[0].title}</h4>
               <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300 font-bold uppercase mt-1 inline-block">
-                {analytics.skillMasteryProgress[0].count} Mastered
+                {skillMasteryProgress[0].count} Mastered
               </span>
             </div>
           ) : (
@@ -234,12 +238,12 @@ export default function TeacherActivityAnalytics() {
         {/* Most Skipped Alert Card */}
         <CartoonCard color="white" className="flex flex-col justify-between p-6">
           <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block mb-2">Common Mistake Alert</span>
-          {analytics.commonMistakes && analytics.commonMistakes.length > 0 ? (
+          {commonMistakes && commonMistakes.length > 0 ? (
             <div className="text-center py-2">
-              <span className="text-5xl select-none block mb-1">{analytics.commonMistakes[0].emoji}</span>
-              <h4 className="font-extrabold text-sm text-slate-800 leading-snug">{analytics.commonMistakes[0].title}</h4>
+              <span className="text-5xl select-none block mb-1">{commonMistakes[0].emoji}</span>
+              <h4 className="font-extrabold text-sm text-slate-800 leading-snug">{commonMistakes[0].title}</h4>
               <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full border border-rose-300 font-bold uppercase mt-1 inline-block">
-                {analytics.commonMistakes[0].count} Occurrences
+                {commonMistakes[0].count} Occurrences
               </span>
             </div>
           ) : (
@@ -262,7 +266,7 @@ export default function TeacherActivityAnalytics() {
           </div>
 
           <div className="flex-1 flex items-end justify-around h-44 pt-4 border-b-2 border-slate-150">
-            {analytics.difficultyDistribution.map((gp, idx) => (
+            {difficultyDistribution.map((gp, idx) => (
               <div key={idx} className="flex flex-col items-center w-12 group relative">
                 <div className="absolute bottom-full mb-1 bg-slate-900 text-white text-[9px] p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 w-24 text-center font-bold">
                   Assigned: {gp.assigned}<br />
@@ -320,7 +324,7 @@ export default function TeacherActivityAnalytics() {
               <ListOrdered className="w-4 h-4 text-emerald-500" /> Skill Mastery Progress
             </h4>
             <div className="space-y-2.5">
-              {analytics.skillMasteryProgress.map((act, i) => (
+              {skillMasteryProgress.map((act, i) => (
                 <div key={act.activityId} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl border border-transparent hover:border-slate-100 transition-all">
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl select-none">{act.emoji}</span>
@@ -343,7 +347,7 @@ export default function TeacherActivityAnalytics() {
               <AlertOctagon className="w-4 h-4 text-rose-500 animate-pulse" /> Common Mistakes
             </h4>
             <div className="space-y-2.5">
-              {analytics.commonMistakes.map((act, i) => (
+              {commonMistakes.map((act, i) => (
                 <div key={act.activityId} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl border border-transparent hover:border-slate-100 transition-all">
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl select-none">{act.emoji}</span>

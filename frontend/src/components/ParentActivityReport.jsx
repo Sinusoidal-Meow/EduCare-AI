@@ -4,7 +4,7 @@ import { API_BASE } from '../config';
 import { CartoonCard } from './Reusables';
 import { eventBus } from '../shared/eventBus';
 
-export default function ParentActivityReport({ studentId = 'student_123' }) {
+export default function ParentActivityReport({ studentId = 'student_123', mode = 'activity' }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -119,8 +119,9 @@ export default function ParentActivityReport({ studentId = 'student_123' }) {
 
   return (
     <div className="space-y-6">
-      
-      {/* Header bar */}
+      {mode === 'activity' && (
+        <>
+          {/* Header bar */}
       <div className="flex items-center justify-between border-b-2 border-slate-100 pb-2">
         <h3 className="font-black text-2xl text-slate-800 flex items-center gap-2">
           <TrendingUp className="w-6 h-6 text-indigo-500 animate-pulse" /> Child's STEM Activity Insights
@@ -373,8 +374,12 @@ export default function ParentActivityReport({ studentId = 'student_123' }) {
         </CartoonCard>
 
       </div>
+        </>
+      )}
 
-      {/* MathMentor AI Insights Section */}
+      {mode === 'parent' && (
+        <>
+          {/* MathMentor AI Insights Section */}
       <CartoonCard color="white" className="p-6 border-l-8 border-l-purple-500">
         <div className="flex flex-col md:flex-row md:items-center justify-between border-b-2 border-slate-100 pb-4 mb-6 gap-4">
           <div className="flex items-center gap-3">
@@ -589,6 +594,8 @@ export default function ParentActivityReport({ studentId = 'student_123' }) {
           </div>
         </div>
       </CartoonCard>
+        </>
+      )}
       
     </div>
   );

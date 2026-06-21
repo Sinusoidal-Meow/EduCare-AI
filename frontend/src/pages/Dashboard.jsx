@@ -175,7 +175,7 @@ export default function Dashboard({
                   <CartoonCard 
                     key={lesson.id} 
                     color="white"
-                    className="flex flex-col justify-between h-48 border-l-8 border-l-science-400 group"
+                    className="flex flex-col justify-between min-h-[250px] border-l-8 border-l-science-400 group"
                   >
                     <div>
                       <div className="flex items-center justify-between mb-2">
