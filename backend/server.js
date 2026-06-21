@@ -12,9 +12,12 @@ import activityRouter from './modules/physical-activity/routes/activity.js';
 import mathRouter from './modules/math/routes/math.js';
 import logicRouter from './modules/logic/routes/logic.js';
 import { processSparkyQuery } from './modules/sparkyEngine.js';
+import gameRoutes from './routes/gameRoutes.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -72,6 +75,7 @@ app.use('/math', mathRouter);
 app.use('/api/math', mathRouter);
 app.use('/logic', logicRouter);
 app.use('/api/logic', logicRouter);
+app.use('/api/game', gameRoutes);
 
 // POST AI TUTOR (Intelligent STEM Simulation Assistant Engine)
 app.post('/api/ai/tutor', (req, res) => {
