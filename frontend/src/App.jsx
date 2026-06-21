@@ -17,11 +17,18 @@ import MathMentorPanel from './components/MathMentorPanel';
 import LogicModule from './LogicModule';
 import LogicLeapPanel from './components/LogicLeapPanel';
 import StudentLogin from './components/StudentLogin';
+import ErrorBoundary from './components/ErrorBoundary';
+import KidsGameModule from './components/KidsGame/KidsGameModule';
 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
+  // Only enable game if URL contains ?game=beta OR environment variable VITE_ENABLE_GAME is set to true
+  const isGameEnabled =
+    new URLSearchParams(location.search).get('game') === 'beta' ||
+    import.meta.env.VITE_ENABLE_GAME === 'true';
+
   // Login State
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return !!localStorage.getItem('educare_student_name');
@@ -118,6 +125,20 @@ export default function App() {
     }
   ];
 
+  if (isGameEnabled) {
+    labs.push({
+      id: 'game',
+      title: 'Kids Shape Academy',
+      icon: '🎮',
+      color: 'science',
+      borderColorClass: 'border-l-8 border-l-pink-500',
+      stackedBorderColorClass: 'border-l-4 border-l-pink-500',
+      badgeBg: 'bg-pink-100 border-pink-300 text-pink-800',
+      desc: 'Play shape matching games, earn high scores, and unlock stars rewards! Gated beta testing.',
+      actionText: 'Play Game 🚀'
+    });
+  }
+
   const renderActiveLab = () => {
     switch (renderedLab) {
       case 'logic':
@@ -132,11 +153,17 @@ export default function App() {
         return <CompanionModule studentId="student_123" onExit={() => setInlineActiveLab(null)} />;
       case 'physical':
         return <PhysicalActivityModule studentId="student_123" onProgressUpdate={handlePhysicalActivityProgressUpdate} onExit={() => setInlineActiveLab(null)} />;
+      case 'game':
+        return (
+          <ErrorBoundary>
+            <KidsGameModule studentId="student_123" onExit={() => setInlineActiveLab(null)} />
+          </ErrorBoundary>
+        );
       default:
         return null;
     }
   };
-  
+
   // Parent dashboard state synchronized from sub-modules
   const [parentStats, setParentStats] = useState({
     stars: 15,
@@ -288,7 +315,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#fcfaf7] text-slate-800 font-sans selection:bg-indigo-100 flex flex-col justify-between">
-      
+
       {/* Dynamic Sync Notification Banner */}
       {notification && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-black px-5 py-3 rounded-2xl shadow-cartoon border-2 border-slate-700 z-50 flex items-center gap-2 animate-bounce">
@@ -304,7 +331,7 @@ export default function App() {
             {/* Main Parent/Teacher Header */}
             <header className="glass border-b-4 border-slate-800 py-4 px-6 shadow-sm sticky top-0 z-40">
               <div className="max-w-7xl mx-auto flex items-center justify-between">
-                
+
                 {/* Logo */}
                 <div className="flex items-center gap-2.5 select-none">
                   <div className="bg-gradient-to-br from-indigo-500 to-purple-600 w-10 h-10 rounded-2xl flex items-center justify-center border-2 border-slate-800 shadow-cartoon">
@@ -322,43 +349,39 @@ export default function App() {
 
                 {/* Dashboard View Switcher */}
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={() => setDashboardView('parent')}
-                    className={`px-4 py-1.5 rounded-xl font-black text-xs border-2 shadow-cartoon transition-all hover:scale-102 active:scale-98 ${
-                      dashboardView === 'parent' 
-                        ? 'bg-indigo-600 text-white border-slate-800' 
+                    className={`px-4 py-1.5 rounded-xl font-black text-xs border-2 shadow-cartoon transition-all hover:scale-102 active:scale-98 ${dashboardView === 'parent'
+                        ? 'bg-indigo-600 text-white border-slate-800'
                         : 'bg-white text-slate-600 border-slate-205 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     Parent Hub 🏠
                   </button>
-                  <button 
+                  <button
                     onClick={() => setDashboardView('teacher')}
-                    className={`px-4 py-1.5 rounded-xl font-black text-xs border-2 shadow-cartoon transition-all hover:scale-102 active:scale-98 ${
-                      dashboardView === 'teacher' 
-                        ? 'bg-purple-600 text-white border-slate-800' 
+                    className={`px-4 py-1.5 rounded-xl font-black text-xs border-2 shadow-cartoon transition-all hover:scale-102 active:scale-98 ${dashboardView === 'teacher'
+                        ? 'bg-purple-600 text-white border-slate-800'
                         : 'bg-white text-slate-600 border-slate-205 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     Teacher Hub 🎓
                   </button>
-                  <button 
+                  <button
                     onClick={() => setDashboardView('activity')}
-                    className={`px-4 py-1.5 rounded-xl font-black text-xs border-2 shadow-cartoon transition-all hover:scale-102 active:scale-98 ${
-                      dashboardView === 'activity' 
-                        ? 'bg-emerald-600 text-white border-slate-800' 
+                    className={`px-4 py-1.5 rounded-xl font-black text-xs border-2 shadow-cartoon transition-all hover:scale-102 active:scale-98 ${dashboardView === 'activity'
+                        ? 'bg-emerald-600 text-white border-slate-800'
                         : 'bg-white text-slate-600 border-slate-205 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     Activity Report 📊
                   </button>
-                  <button 
+                  <button
                     onClick={() => setDashboardView('insights')}
-                    className={`px-4 py-1.5 rounded-xl font-black text-xs border-2 shadow-cartoon transition-all hover:scale-102 active:scale-98 ${
-                      dashboardView === 'insights' 
-                        ? 'bg-rose-600 text-white border-slate-800' 
+                    className={`px-4 py-1.5 rounded-xl font-black text-xs border-2 shadow-cartoon transition-all hover:scale-102 active:scale-98 ${dashboardView === 'insights'
+                        ? 'bg-rose-600 text-white border-slate-800'
                         : 'bg-white text-slate-600 border-slate-205 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     Insights Hub 💡
                   </button>
@@ -380,7 +403,7 @@ export default function App() {
 
             {/* Main Dashboard Portal Container */}
             <main className="flex-1 max-w-7xl mx-auto px-4 py-8 space-y-10 w-full">
-              
+
               {dashboardView === 'parent' && (
                 <>
                   {/* Main Welcome Hero */}
@@ -438,10 +461,10 @@ export default function App() {
                     )}
 
                     <div className="transition-all duration-500 ease-in-out flex flex-col lg:flex-row gap-6 items-start w-full">
-                      
+
                       {/* Active Lab Component Display Area */}
                       {inlineActiveLab && (
-                        <div 
+                        <div
                           className="flex-1 w-full lg:w-[calc(100%-344px)] border-4 border-slate-800 rounded-3xl overflow-hidden bg-white shadow-cartoon transition-all duration-300"
                           style={{ willChange: 'transform, opacity' }}
                         >
@@ -464,18 +487,17 @@ export default function App() {
                       )}
 
                       {/* Labs Grid / Sidebar Container */}
-                      <div 
-                        className={`transition-all duration-500 ease-in-out shrink-0 ${
-                          inlineActiveLab 
-                            ? 'w-full lg:w-[320px] flex flex-col gap-4 lg:sticky lg:top-24 max-h-[calc(100vh-120px)] overflow-y-auto pr-1 pb-4' 
+                      <div
+                        className={`transition-all duration-500 ease-in-out shrink-0 ${inlineActiveLab
+                            ? 'w-full lg:w-[320px] flex flex-col gap-4 lg:sticky lg:top-24 max-h-[calc(100vh-120px)] overflow-y-auto pr-1 pb-4'
                             : 'w-full grid grid-cols-1 md:grid-cols-3 gap-6'
-                        }`}
+                          }`}
                         style={{ willChange: 'transform, opacity' }}
                       >
                         {inlineActiveLab && (
                           <div className="bg-slate-900 text-white rounded-2xl p-3.5 text-center font-black text-xs shadow-cartoon border-2 border-slate-800 animate-fade-in flex items-center justify-between">
                             <span>Switch Labs 🚀</span>
-                            <button 
+                            <button
                               onClick={() => setInlineActiveLab(null)}
                               className="bg-rose-500 hover:bg-rose-600 text-white border border-slate-800 px-2 py-0.5 rounded-lg text-[10px] font-extrabold shadow-cartoon-hover active:translate-y-0.5"
                             >
@@ -513,9 +535,9 @@ export default function App() {
                             } else {
                               // Full Card View in Grid
                               return (
-                                <CartoonCard 
+                                <CartoonCard
                                   key={lab.id}
-                                  color="white" 
+                                  color="white"
                                   className={`flex flex-col justify-between h-64 border-l-8 ${lab.borderColorClass} shadow-cartoon hover:shadow-cartoon-hover hover:scale-102 transition-all group`}
                                 >
                                   <div>
@@ -532,8 +554,8 @@ export default function App() {
                                       {lab.desc}
                                     </p>
                                   </div>
-                                  <CartoonButton 
-                                    color={lab.color} 
+                                  <CartoonButton
+                                    color={lab.color}
                                     onClick={() => {
                                       setInlineActiveLab(lab.id);
                                       showNotification(`${lab.icon} Opened ${lab.title} inline!`);
@@ -584,10 +606,10 @@ export default function App() {
             </footer>
           </>
         } />
-        
+
         {/* STEM Modular Routing Subtree */}
         <Route path="/stem/*" element={
-          <STEMModule 
+          <STEMModule
             studentId="student_123"
             onProgressUpdate={handleSTEMProgressUpdate}
             onExit={() => {
@@ -599,7 +621,7 @@ export default function App() {
 
         {/* Physical Activity Modular Routing Subtree */}
         <Route path="/physical-activity/*" element={
-          <PhysicalActivityModule 
+          <PhysicalActivityModule
             studentId="student_123"
             onProgressUpdate={handlePhysicalActivityProgressUpdate}
             onExit={() => {
@@ -611,7 +633,7 @@ export default function App() {
 
         {/* Math AI Modular Routing Subtree */}
         <Route path="/math/*" element={
-          <MathModule 
+          <MathModule
             studentId="student_123"
             onExit={() => {
               navigate('/');
@@ -622,7 +644,7 @@ export default function App() {
 
         {/* English AI Modular Routing Subtree */}
         <Route path="/english-ai/*" element={
-          <EnglishAIModule 
+          <EnglishAIModule
             studentId="student_123"
             onExit={() => {
               navigate('/');
@@ -633,7 +655,7 @@ export default function App() {
 
         {/* AI Companion Modular Routing Subtree */}
         <Route path="/companion/*" element={
-          <CompanionModule 
+          <CompanionModule
             studentId="student_123"
             onExit={() => {
               navigate('/');
@@ -644,7 +666,7 @@ export default function App() {
 
         {/* Logic AI Modular Routing Subtree */}
         <Route path="/logic/*" element={
-          <LogicModule 
+          <LogicModule
             studentId="student_123"
             onExit={() => {
               navigate('/');
@@ -652,14 +674,30 @@ export default function App() {
             }}
           />
         } />
+
+        {/* Kids Game Gated Route */}
+        {isGameEnabled && (
+          <Route path="/kids-game" element={
+            <ErrorBoundary>
+              <KidsGameModule
+                studentId="student_123"
+                onExit={() => {
+                  navigate('/');
+                  showNotification("🏠 Exited Shape Academy.");
+                }}
+              />
+            </ErrorBoundary>
+          } />
+        )}
+
       </Routes>
 
       {/* Floating AI Panels */}
-      {location.pathname.startsWith('/stem') && 
-       !location.pathname.startsWith('/stem/simulator') && 
-       !location.pathname.includes('/stem/lessons/') && (
-        <AITutorPanel floating={true} studentId="student_123" grade={activeGrade} />
-      )}
+      {location.pathname.startsWith('/stem') &&
+        !location.pathname.startsWith('/stem/simulator') &&
+        !location.pathname.includes('/stem/lessons/') && (
+          <AITutorPanel floating={true} studentId="student_123" grade={activeGrade} />
+        )}
       {location.pathname.startsWith('/physical-activity') && (
         <FitFriendPanel floating={true} studentId="student_123" grade={activeGrade} />
       )}
